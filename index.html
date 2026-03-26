@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monte Carlo Engine — Quantitative Simulation Suite</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="scanlines"></div>
+<div class="noise"></div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-mark">MC</div>
+    <div>
+      <div class="header-title">MONTE CARLO ENGINE</div>
+      <div class="header-sub">Quantitative Simulation Suite v2.4.1</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-pill">
+      <span class="status-dot"></span>
+      LIVE
+    </div>
+    <div class="header-time" id="clock"></div>
+  </div>
+</header>
+
+<!-- HERO SECTION -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-tag">STOCHASTIC MODELING</div>
+    <h1 class="hero-title">Uncertainty<br><span class="accent">Quantified.</span></h1>
+    <p class="hero-desc">
+      Monte Carlo simulation runs thousands of randomised trials across your uncertain inputs, mapping the full probability distribution of outcomes — not just a single point estimate. Used by every major hedge fund, investment bank, and risk desk on the planet.
+    </p>
+    <div class="hero-stats">
+      <div class="hstat">
+        <div class="hstat-num" id="total-runs">0</div>
+        <div class="hstat-label">TOTAL TRIALS RUN</div>
+      </div>
+      <div class="hstat-divider"></div>
+      <div class="hstat">
+        <div class="hstat-num">∞</div>
+        <div class="hstat-label">POSSIBLE OUTCOMES</div>
+      </div>
+      <div class="hstat-divider"></div>
+      <div class="hstat">
+        <div class="hstat-num">1/N</div>
+        <div class="hstat-label">CONVERGENCE RATE</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <canvas id="heroCanvas" width="420" height="280"></canvas>
+    <div class="hero-canvas-label">LIVE SAMPLING — NORMAL DISTRIBUTION</div>
+  </div>
+</section>
+
+<!-- INFO CARDS -->
+<section class="info-section">
+  <div class="section-label">WHY IT MATTERS</div>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-icon">◈</div>
+      <div class="info-card-title">Risk Quantification</div>
+      <p>Replace gut-feel estimates with full probability distributions. See your P5, P50, and P95 scenarios side-by-side. Know exactly how bad "bad" can get.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">⬡</div>
+      <div class="info-card-title">Portfolio Stress Testing</div>
+      <p>Simulate thousands of market paths simultaneously. Black-Scholes, VaR, CVaR — all rely on the same Monte Carlo engine under the hood.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">◎</div>
+      <div class="info-card-title">Law of Large Numbers</div>
+      <p>As trial count N→∞, simulated distributions converge to the true analytical solution. More trials = tighter confidence intervals, proportional to 1/√N.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">⬟</div>
+      <div class="info-card-title">Correlated Variables</div>
+      <p>Real markets don't move independently. Cholesky decomposition allows simulation of correlated asset returns — the key to realistic portfolio modeling.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SIMULATOR -->
+<section class="sim-section">
+  <div class="section-label">SIMULATION ENGINE</div>
+
+  <!-- SCENARIO TABS -->
+  <div class="scenario-tabs">
+    <button class="stab active" data-sc="gbm">GBM — Asset Price</button>
+    <button class="stab" data-sc="portfolio">Portfolio VaR</button>
+    <button class="stab" data-sc="project">Project Cost</button>
+    <button class="stab" data-sc="pi">Estimate π</button>
+  </div>
+
+  <!-- SCENARIO DESCRIPTION -->
+  <div class="scenario-desc" id="sc-desc"></div>
+
+  <div class="sim-body">
+    <!-- LEFT: CONTROLS -->
+    <div class="controls-panel">
+      <div class="panel-title">PARAMETERS</div>
+      <div id="param-controls"></div>
+
+      <div class="trial-row">
+        <div class="panel-title">TRIALS</div>
+        <div class="trial-btns">
+          <button class="tbtn active" data-n="1000">1K</button>
+          <button class="tbtn" data-n="10000">10K</button>
+          <button class="tbtn" data-n="50000">50K</button>
+          <button class="tbtn" data-n="100000">100K</button>
+        </div>
+      </div>
+
+      <button class="run-btn" id="runBtn" onclick="runSimulation()">
+        <span class="run-btn-text">▶ RUN SIMULATION</span>
+        <span class="run-btn-sub" id="run-sub">10,000 trials</span>
+      </button>
+
+      <div class="convergence-box" id="conv-box" style="display:none">
+        <div class="panel-title">CONVERGENCE</div>
+        <canvas id="convChart" height="80"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT: OUTPUT -->
+    <div class="output-panel">
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">MEAN</div>
+          <div class="stat-val" id="s-mean">—</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-label">P5 (DOWNSIDE)</div>
+          <div class="stat-val" id="s-p5">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">P50 (MEDIAN)</div>
+          <div class="stat-val" id="s-p50">—</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">P95 (UPSIDE)</div>
+          <div class="stat-val" id="s-p95">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">STD DEV</div>
+          <div class="stat-val" id="s-std">—</div>
+        </div>
+        <div class="stat-card accent">
+          <div class="stat-label">SKEWNESS</div>
+          <div class="stat-val" id="s-skew">—</div>
+        </div>
+      </div>
+
+      <div class="chart-header">
+        <span class="panel-title">OUTCOME DISTRIBUTION</span>
+        <div class="chart-toggles">
+          <button class="ctoggle active" data-mode="hist">HISTOGRAM</button>
+          <button class="ctoggle" data-mode="cdf">CDF</button>
+          <button class="ctoggle" data-mode="paths" id="pathsToggle">PATHS</button>
+        </div>
+      </div>
+      <div style="position:relative; width:100%; height:320px;">
+        <canvas id="mainChart"></canvas>
+      </div>
+
+      <div class="legend-row" id="legend-row"></div>
+
+      <div class="formula-box" id="formula-box"></div>
+    </div>
+  </div>
+</section>
+
+<!-- THEORY SECTION -->
+<section class="theory-section">
+  <div class="section-label">THE MATH</div>
+  <div class="theory-grid">
+    <div class="theory-block">
+      <div class="theory-title">Central Limit Theorem</div>
+      <div class="theory-formula">X̄ₙ → N(μ, σ²/n) as n→∞</div>
+      <p>The mean of N samples converges to a normal distribution regardless of the underlying distribution — the foundation of why Monte Carlo works.</p>
+    </div>
+    <div class="theory-block">
+      <div class="theory-title">Standard Error</div>
+      <div class="theory-formula">SE = σ / √N</div>
+      <p>Simulation error shrinks as 1/√N. Doubling accuracy requires 4× the trials. 10,000 trials gives ~1% standard error on most estimates.</p>
+    </div>
+    <div class="theory-block">
+      <div class="theory-title">Geometric Brownian Motion</div>
+      <div class="theory-formula">dS = μS dt + σS dW</div>
+      <p>The SDE governing asset prices under Black-Scholes. μ is drift, σ is volatility, dW is a Wiener process increment. Discretised for simulation.</p>
+    </div>
+    <div class="theory-block">
+      <div class="theory-title">Box-Muller Transform</div>
+      <div class="theory-formula">Z = √(-2 ln U₁) · cos(2π U₂)</div>
+      <p>Converts uniform random numbers to standard normal variates. The workhorse behind every normal distribution sample in this engine.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-left">MONTE CARLO ENGINE — Built for quants, by quants</div>
+  <div class="footer-right">All simulations run client-side. No data leaves your browser.</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="sim.js"></script>
+</body>
+</html>
